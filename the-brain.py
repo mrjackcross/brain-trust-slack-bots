@@ -21,12 +21,12 @@ def handle_command(command, channel, timestamp):
     """
     print(command)
     if command == '?' or command == ':question:':
-        #response = '!'
-        #slack_client.api_call("chat.postMessage", channel=channel,
+        # response = '!'
+        # slack_client.api_call("chat.postMessage", channel=channel,
         #                      text=response, as_user=True)
-	slack_client.api_call("reactions.add", channel=channel,
+        slack_client.api_call("reactions.add", channel=channel,
                               name='exclamation', as_user=True,
-			      timestamp=timestamp)
+                              timestamp=timestamp)
 
     else:
         response = "Not sure what you mean. Use the *" + EXAMPLE_COMMAND + \
@@ -50,7 +50,9 @@ def parse_slack_output(slack_rtm_output):
                 # return text after the @ mention, whitespace removed
                 return output['text'].split(AT_BOT)[1].strip().lower(), \
                        output['channel'], output['timestamp']
-            if (output and 'text' in output and output['text'] == '?') or (output and 'text' in output and output['text'] == ':question:'):
+            if (output and 'text' in output and output['text'] == '?') or (
+                    output and 'text' in output and output['text'] == ':question:') and (
+                            output and 'user' in output and output['user'] != BOT_ID):
                 # return text after the @ mention, whitespace removed
                 return output['text'], output['channel'], output['ts']
 
