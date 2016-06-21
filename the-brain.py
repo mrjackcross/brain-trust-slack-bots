@@ -13,16 +13,21 @@ EXAMPLE_COMMAND = "do"
 slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
 
 
-def handle_command(command, channel):
+def handle_command(command, channel, timestamp):
     """
         Receives commands directed at the bot and determines if they
         are valid commands. If so, then acts on the commands. If not,
         returns back what it needs for clarification.
     """
-    if command == '?':
-        response = '!'
-        slack_client.api_call("chat.postMessage", channel=channel,
-                              text=response, as_user=True)
+    print(command)
+    if command == '?' or command == ':question:':
+        #response = '!'
+        #slack_client.api_call("chat.postMessage", channel=channel,
+        #                      text=response, as_user=True)
+	slack_client.api_call("reactions.add", channel=channel,
+                              name='exclamation', as_user=True,
+			      timestamp=timestamp)
+
     else:
         response = "Not sure what you mean. Use the *" + EXAMPLE_COMMAND + \
                    "* command with numbers, delimited by spaces."
@@ -44,12 +49,12 @@ def parse_slack_output(slack_rtm_output):
             if output and 'text' in output and AT_BOT in output['text']:
                 # return text after the @ mention, whitespace removed
                 return output['text'].split(AT_BOT)[1].strip().lower(), \
-                       output['channel']
-            if output and 'text' in output and output['text'] == '?':
+                       output['channel'], output['timestamp']
+            if (output and 'text' in output and output['text'] == '?') or (output and 'text' in output and output['text'] == ':question:'):
                 # return text after the @ mention, whitespace removed
-                return output['text'], output['channel']
+                return output['text'], output['channel'], output['ts']
 
-    return None, None
+    return None, None, None
 
 
 if __name__ == "__main__":
@@ -57,9 +62,9 @@ if __name__ == "__main__":
     if slack_client.rtm_connect():
         print("TheBrain connected and running!")
         while True:
-            command, channel = parse_slack_output(slack_client.rtm_read())
-            if command and channel:
-                handle_command(command, channel)
+            command, channel, ts = parse_slack_output(slack_client.rtm_read())
+            if command and channel and ts:
+                handle_command(command, channel, ts)
             time.sleep(READ_WEBSOCKET_DELAY)
     else:
         print("Connection failed. Invalid Slack token or bot ID?")
