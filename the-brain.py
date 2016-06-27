@@ -83,8 +83,9 @@ def parse_slack_history():
 
     oldest_message = (datetime.datetime.combine(datetime.date.today(), datetime.time.min) - datetime.datetime(1970,1,1)).total_seconds()
     while has_more:
-        response = slack_client.api_call("channels.history", channel=os.environ.get("SANDBOX_ID"), count=1000,
+        response = slack_client.api_call("channels.history", channel='C19FKETK4', count=1000,
                                           oldest=oldest_message)
+
         if response and 'has_more' in response:
             has_more = response['has_more']
         else:
@@ -99,6 +100,7 @@ def parse_slack_history():
                     timestamp = message['ts']
                     if command == '?' or command == ':question:':
                         user_arrive_times[user] = timestamp
+
                     if oldest_message < float(timestamp):
                         oldest_message = float(timestamp)
 
@@ -107,7 +109,7 @@ if __name__ == "__main__":
     if slack_client.rtm_connect():
         print("TheBrain connected and running!")
         parse_slack_history()
-        print(user_arrive_times)
+        #print(user_arrive_times)
     while True:
             command, user, channel, ts = parse_slack_output(slack_client.rtm_read())
             if command and channel and ts:
