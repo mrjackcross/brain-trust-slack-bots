@@ -107,6 +107,7 @@ if __name__ == "__main__":
     if slack_client.rtm_connect():
         print("TheBrain connected and running!")
         parse_slack_history()
+        print(user_arrive_times)
     while True:
             command, user, channel, ts = parse_slack_output(slack_client.rtm_read())
             if command and channel and ts:
