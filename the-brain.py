@@ -83,6 +83,8 @@ def parse_slack_history():
                                           oldest=oldest_message)
         if response and 'has_more' in response:
             has_more = response['has_more']
+        else:
+            has_more = False
 
         if response and 'messages' in response:
             message_list = response['messages']
