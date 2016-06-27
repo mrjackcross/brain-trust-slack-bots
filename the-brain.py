@@ -24,7 +24,8 @@ def handle_command(command, user, channel, timestamp):
     print(command)
     if command == '?' or command == ':question:':
         if user in user_arrive_times:
-            midnight = datetime.datetime.combine(datetime.date.today(), datetime.time.min).timestamp()
+            midnight = (datetime.datetime.combine(datetime.date.today(), datetime.time.min) - datetime.datetime(1970,1,1)).total_seconds()
+
             if float(user_arrive_times[user]) > midnight:
                 slack_client.api_call("reactions.add", channel=channel,
                                       name='middle_finger::skin-tone-2', as_user=True,
@@ -78,15 +79,11 @@ def parse_slack_output(slack_rtm_output):
     return None, None, None, None
     
 def parse_slack_history():
-
-    #response = slack_client.api_call("channels.info", channel='C1JPKCKP0')
-    #print(response)
-
     has_more = True
 
-    oldest_message = datetime.datetime.combine(datetime.date.today(), datetime.time.min).timestamp()
+    oldest_message = (datetime.datetime.combine(datetime.date.today(), datetime.time.min) - datetime.datetime(1970,1,1)).total_seconds()
     while has_more:
-        response = slack_client.api_call("channels.history", channel=os.environ.get("GENERAL_ID"), count=1000,
+        response = slack_client.api_call("channels.history", channel=os.environ.get("SANDBOX_ID"), count=1000,
                                           oldest=oldest_message)
         if response and 'has_more' in response:
             has_more = response['has_more']
