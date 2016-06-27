@@ -86,7 +86,7 @@ def parse_slack_history():
 
     oldest_message = datetime.datetime.combine(datetime.date.today(), datetime.time.min).timestamp()
     while has_more:
-        response = slack_client.api_call("channels.history", channel=os.environ.get("SANDBOX_ID"), count=1000,
+        response = slack_client.api_call("channels.history", channel=os.environ.get("GENERAL_ID"), count=1000,
                                           oldest=oldest_message)
         if response and 'has_more' in response:
             has_more = response['has_more']
