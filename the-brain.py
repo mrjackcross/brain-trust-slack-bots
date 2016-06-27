@@ -1,5 +1,5 @@
+from datetime import date, datetime, time
 import os
-import time
 from slackclient import SlackClient
 
 # TheBrain's ID as an environment variable
@@ -12,8 +12,9 @@ EXAMPLE_COMMAND = "do"
 # instantiate Slack & Twilio clients
 slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
 
+user_arrive_times = {}
 
-def handle_command(command, channel, timestamp):
+def handle_command(command, user, channel, timestamp):
     """
         Receives commands directed at the bot and determines if they
         are valid commands. If so, then acts on the commands. If not,
@@ -21,12 +22,28 @@ def handle_command(command, channel, timestamp):
     """
     print(command)
     if command == '?' or command == ':question:':
-        # response = '!'
-        # slack_client.api_call("chat.postMessage", channel=channel,
-        #                      text=response, as_user=True)
-        slack_client.api_call("reactions.add", channel=channel,
-                              name='exclamation', as_user=True,
-                              timestamp=timestamp)
+        if user in user_arrive_times:
+            midnight = datetime.combine(date.today(), time.min)
+            if user_arrive_times[user] > midnight:
+                slack_client.api_call("reactions.add", channel=channel,
+                                      name='anger', as_user=True,
+                                      timestamp=timestamp)
+            else:
+                user_arrive_times[user] = timestamp
+                # response = '!'
+                # slack_client.api_call("chat.postMessage", channel=channel,
+                #                      text=response, as_user=True)
+                slack_client.api_call("reactions.add", channel=channel,
+                                      name='exclamation', as_user=True,
+                                      timestamp=timestamp)
+        else:
+            user_arrive_times[user] = timestamp
+            # response = '!'
+            # slack_client.api_call("chat.postMessage", channel=channel,
+            #                      text=response, as_user=True)
+            slack_client.api_call("reactions.add", channel=channel,
+                                  name='exclamation', as_user=True,
+                                  timestamp=timestamp)
 
     else:
         response = "Not sure what you mean. Use the *" + EXAMPLE_COMMAND + \
@@ -49,24 +66,40 @@ def parse_slack_output(slack_rtm_output):
             if output and 'text' in output and AT_BOT in output['text']:
                 # return text after the @ mention, whitespace removed
                 return output['text'].split(AT_BOT)[1].strip().lower(), \
-                       output['channel'], output['timestamp']
+                       output['user'], output['channel'], output['timestamp']
             if (output and 'text' in output and output['text'] == '?') or (
                     output and 'text' in output and output['text'] == ':question:') and (
                             output and 'user' in output and output['user'] != BOT_ID):
                 # return text after the @ mention, whitespace removed
-                return output['text'], output['channel'], output['ts']
+                return output['text'], output['user'], output['channel'], output['ts']
 
     return None, None, None
-
+    
+def parse_slack_history():
+    has_more = True
+    oldest_message = datetime.combine(date.today(), time.min)
+    while has_more:
+        response = slack_client.api_call("channels.history", channel=channel, count=1000,
+                                         text=response, oldest=oldest_message)
+        has_more = response['has_more']
+        message_list = response['messages']
+        for message in message_list:
+            command = message['text']
+            timestamp = message['ts']
+            if command == '?' or command == ':question:':
+                user_arrive_times[user] = timestamp
+            if oldest_message < timestamp:
+                oldest_message = timestamp
 
 if __name__ == "__main__":
     READ_WEBSOCKET_DELAY = 1  # 1 second delay between reading from firehose
     if slack_client.rtm_connect():
         print("TheBrain connected and running!")
+        parse_slack_history()
         while True:
-            command, channel, ts = parse_slack_output(slack_client.rtm_read())
+            command, user, channel, ts = parse_slack_output(slack_client.rtm_read())
             if command and channel and ts:
-                handle_command(command, channel, ts)
+                handle_command(command, user, channel, ts)
             time.sleep(READ_WEBSOCKET_DELAY)
     else:
         print("Connection failed. Invalid Slack token or bot ID?")
