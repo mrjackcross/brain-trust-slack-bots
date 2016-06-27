@@ -9,6 +9,6 @@ slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
 
 if __name__ == "__main__":
     if slack_client.rtm_connect():
-        slack_client.api_call("chat.postMessage", channel='bot-sandbox', text=':question:', as_user=True)
+        slack_client.api_call("chat.postMessage", channel='general', text=':question:', as_user=True)
     else:
         print("Connection failed. Invalid Slack token or bot ID?")

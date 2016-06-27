@@ -1,4 +1,5 @@
-from datetime import date, datetime, time
+import time
+import datetime
 import os
 from slackclient import SlackClient
 
@@ -23,11 +24,12 @@ def handle_command(command, user, channel, timestamp):
     print(command)
     if command == '?' or command == ':question:':
         if user in user_arrive_times:
-            midnight = datetime.combine(date.today(), time.min)
-            if user_arrive_times[user] > midnight:
+            midnight = datetime.datetime.combine(datetime.date.today(), datetime.time.min).timestamp()
+            if float(user_arrive_times[user]) > midnight:
                 slack_client.api_call("reactions.add", channel=channel,
-                                      name='anger', as_user=True,
+                                      name='middle_finger::skin-tone-2', as_user=True,
                                       timestamp=timestamp)
+                slack_client.api_call("chat.postMessage", channel=channel, text='You already ?ed!!!! :middle_finger::skin-tone-2:', as_user=True)
             else:
                 user_arrive_times[user] = timestamp
                 # response = '!'
@@ -73,13 +75,18 @@ def parse_slack_output(slack_rtm_output):
                 # return text after the @ mention, whitespace removed
                 return output['text'], output['user'], output['channel'], output['ts']
 
-    return None, None, None
+    return None, None, None, None
     
 def parse_slack_history():
+
+    #response = slack_client.api_call("channels.info", channel='C1JPKCKP0')
+    #print(response)
+
     has_more = True
-    oldest_message = datetime.combine(date.today(), time.min)
+
+    oldest_message = datetime.datetime.combine(datetime.date.today(), datetime.time.min).timestamp()
     while has_more:
-        response = slack_client.api_call("channels.history", channel='bot-sandbox', count=1000,
+        response = slack_client.api_call("channels.history", channel=os.environ.get("SANDBOX_ID"), count=1000,
                                           oldest=oldest_message)
         if response and 'has_more' in response:
             has_more = response['has_more']
@@ -89,20 +96,20 @@ def parse_slack_history():
         if response and 'messages' in response:
             message_list = response['messages']
             for message in message_list:
-                command = message['text']
-                timestamp = message['ts']
-                if command == '?' or command == ':question:':
-                    user_arrive_times[user] = timestamp
-                if oldest_message < timestamp:
-                    oldest_message = timestamp
+                if 'text' in message and 'user' in message and 'ts' in message:
+                    command = message['text']
+                    user = message['user']
+                    timestamp = message['ts']
+                    if command == '?' or command == ':question:':
+                        user_arrive_times[user] = timestamp
+                    if oldest_message < float(timestamp):
+                        oldest_message = float(timestamp)
 
 if __name__ == "__main__":
     READ_WEBSOCKET_DELAY = 1  # 1 second delay between reading from firehose
     if slack_client.rtm_connect():
         print("TheBrain connected and running!")
         parse_slack_history()
-        print("Parsed today's history!")
-        print(user_arrive_times)
     while True:
             command, user, channel, ts = parse_slack_output(slack_client.rtm_read())
             if command and channel and ts:
