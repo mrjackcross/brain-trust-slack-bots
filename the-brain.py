@@ -81,15 +81,18 @@ def parse_slack_history():
     while has_more:
         response = slack_client.api_call("channels.history", channel='bot-sandbox', count=1000,
                                           oldest=oldest_message)
-        has_more = response['has_more']
-        message_list = response['messages']
-        for message in message_list:
-            command = message['text']
-            timestamp = message['ts']
-            if command == '?' or command == ':question:':
-                user_arrive_times[user] = timestamp
-            if oldest_message < timestamp:
-                oldest_message = timestamp
+        if response and 'has_more' in response:
+            has_more = response['has_more']
+
+        if response and 'messages' in response:
+            message_list = response['messages']
+            for message in message_list:
+                command = message['text']
+                timestamp = message['ts']
+                if command == '?' or command == ':question:':
+                    user_arrive_times[user] = timestamp
+                if oldest_message < timestamp:
+                    oldest_message = timestamp
 
 if __name__ == "__main__":
     READ_WEBSOCKET_DELAY = 1  # 1 second delay between reading from firehose
